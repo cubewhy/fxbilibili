@@ -13,17 +13,19 @@ async fn bv_handler(
     let (bv_id,) = path.into_inner();
     let bili_service = bili_service.into_inner();
 
-    let og = match bili_service.video_info_og(&VideoId::Bv(bv_id)).await {
-        Ok(v) => v,
-        Err(err) => return HttpResponse::Ok().body(err.to_string()), // TODO: use json
-    };
+    let video_id = VideoId::Bv(bv_id);
 
     if is_browser(request.headers().get("User-Agent")) {
         // do redirect directly
         return HttpResponse::PermanentRedirect()
-            .insert_header(("Location", og.url.as_str()))
-            .body(og.url);
+            .insert_header(("Location", video_id.url().as_str()))
+            .body(format!("Redirect to {}", video_id.url()));
     }
+
+    let og = match bili_service.video_info_og(&video_id).await {
+        Ok(v) => v,
+        Err(err) => return HttpResponse::Ok().body(err.to_string()), // TODO: use json
+    };
 
     HttpResponse::Ok()
         .content_type("text/html")
@@ -43,7 +45,16 @@ async fn av_handler(
         return HttpResponse::BadRequest().body("Bad avid"); // TODO: use json
     };
 
-    let og = match bili_service.video_info_og(&VideoId::Av(av_id)).await {
+    let video_id = VideoId::Av(av_id);
+
+    if is_browser(request.headers().get("User-Agent")) {
+        // do redirect directly
+        return HttpResponse::PermanentRedirect()
+            .insert_header(("Location", video_id.url().as_str()))
+            .body(format!("Redirect to {}", video_id.url()));
+    }
+
+    let og = match bili_service.video_info_og(&video_id).await {
         Ok(v) => v,
         Err(err) => return HttpResponse::Ok().body(err.to_string()), // TODO: use json
     };
